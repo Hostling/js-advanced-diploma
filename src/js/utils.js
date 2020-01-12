@@ -9,7 +9,7 @@ export function calcTileType(index, boardSize) {
       return 'bottom-left';
     case index === boardSize**2 - 1:
       return 'bottom-right';
-    case index < boardSize && index !== 0:
+    case index < boardSize:
       return 'top';
     case index % boardSize === 0:
       return 'left';
