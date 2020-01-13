@@ -20,8 +20,10 @@ export default class GameController {
   init() {
     // TODO: add event listeners to gamePlay events
     // TODO: load saved stated from stateService
+    // Отрисовываем поле
     this.gamePlay.drawUi('prairie');
 
+    // Отрисовываем персонажей на поле
     const userPositions = Array.from(this.getStartPositions(this.gamePlay.boardSize, 'user'));
     const enemyPositions = Array.from(this.getStartPositions(this.gamePlay.boardSize, 'enemy'));
     this.userTeam = generateTeam([Bowman, Swordsman, Magician], this.maxLevel, this.charactersCount);
@@ -33,6 +35,11 @@ export default class GameController {
       return new PositionedCharacter(elem.value, enemyPositions.shift())
     });
     this.gamePlay.redrawPositions(this.userTeam.concat(this.enemyTeam));
+
+    // Подписываемся на события на поле
+    this.gamePlay.addCellEnterListener(this.onCellEnter.bind(this));
+    this.gamePlay.addCellLeaveListener(this.onCellLeave.bind(this));
+
   }
 
   getStartPositions(size, side) {
@@ -69,9 +76,20 @@ export default class GameController {
 
   onCellEnter(index) {
     // TODO: react to mouse enter
+    // Проверяем есть ли персонаж в выбранной клетке
+    const allCharacters = this.userTeam.concat(this.enemyTeam);
+    const allCharactersPositions = allCharacters.map((elem) => {
+      return elem.position;
+    });
+    if(allCharactersPositions.indexOf(index) !== -1) {
+      allCharacters.forEach((element) => {
+        if (element.position === index) this.gamePlay.showCellTooltip(element.character.showInfo(), index);
+      });
+    }
   }
 
   onCellLeave(index) {
     // TODO: react to mouse leave
+    this.gamePlay.hideCellTooltip(index);
   }
 }

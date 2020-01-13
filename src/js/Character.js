@@ -8,4 +8,8 @@ export default class Character {
     // TODO: throw error if user use "new Character()"
     if (new.target === Character) throw new Error('Запрещено создавать объекты родительского класса. Используйте дочерние.');
   }
+
+  showInfo(){
+    return `🎖 ${this.level} ⚔ ${this.attack} 🛡 ${this.defence} ❤ ${this.health}`;
+  }
 }
