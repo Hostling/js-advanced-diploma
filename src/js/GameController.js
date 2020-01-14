@@ -6,6 +6,7 @@ import Vampire from './Vampire';
 import Daemon from './Daemon';
 import { generateTeam } from './generators'
 import PositionedCharacter from './PositionedCharacter';
+import GamePlay from './GamePlay';
 
 export default class GameController {
   constructor(gamePlay, stateService) {
@@ -15,6 +16,7 @@ export default class GameController {
     this.maxLevel = 4;
     this.userTeam = [];
     this.enemyTeam = [];
+    this.selectedCell = undefined;
   }
 
   init() {
@@ -39,7 +41,7 @@ export default class GameController {
     // Подписываемся на события на поле
     this.gamePlay.addCellEnterListener(this.onCellEnter.bind(this));
     this.gamePlay.addCellLeaveListener(this.onCellLeave.bind(this));
-
+    this.gamePlay.addCellClickListener(this.onCellClick.bind(this));
   }
 
   getStartPositions(size, side) {
@@ -72,6 +74,20 @@ export default class GameController {
 
   onCellClick(index) {
     // TODO: react to click
+    // Получаем массив со списком ячеек с парсонажами игрока
+    const userCharactersPositions = this.userTeam.map((elem) => {
+      return elem.position;
+    });
+    if (userCharactersPositions.indexOf(index) === -1) {
+      GamePlay.showError('В этой ячейке нет персонажа вашей команды!');
+      return null;
+    }
+    if (this.selectedCell !== undefined) {
+      this.gamePlay.deselectCell(this.selectedCell);
+      this.selectedCell = undefined;
+    }
+    this.gamePlay.selectCell(index);
+    this.selectedCell = index;
   }
 
   onCellEnter(index) {
