@@ -78,20 +78,35 @@ export default class GameController {
     const userCharactersPositions = this.userTeam.map((elem) => {
       return elem.position;
     });
-    if (userCharactersPositions.indexOf(index) === -1) {
-      GamePlay.showError('В этой ячейке нет персонажа вашей команды!');
-      return null;
+    if(this.selectedCell === undefined) {
+      if (userCharactersPositions.indexOf(index) === -1) {
+        GamePlay.showError('В этой ячейке нет персонажа вашей команды!');
+        return null;
+      }
+      if (this.selectedCell !== undefined) {
+        this.gamePlay.deselectCell(this.selectedCell);
+        this.selectedCell = undefined;
+      }
+      this.gamePlay.selectCell(index);
+      this.selectedCell = index;
+    } else {
+      const selectedCharacter = this.userTeam.find((element) => element.position === this.selectedCell);
+      const allow = this.isAllowed(selectedCharacter, index);
+      if(userCharactersPositions.indexOf(index) !== -1) {
+        this.gamePlay.setCursor('pointer');
+      } else if(!allow) {
+        this.gamePlay.setCursor('not-allowed');
+      } else if(allow.attack) {
+        this.gamePlay.setCursor('crosshair');
+        this.gamePlay.selectCell(index, 'red');
+      } else if (allow.walk) {
+        this.gamePlay.setCursor('pointer');
+        this.gamePlay.selectCell(index, 'green');
+      }
     }
-    if (this.selectedCell !== undefined) {
-      this.gamePlay.deselectCell(this.selectedCell);
-      this.selectedCell = undefined;
-    }
-    this.gamePlay.selectCell(index);
-    this.selectedCell = index;
   }
 
   onCellEnter(index) {
-    // TODO: react to mouse enter
     // Проверяем есть ли персонаж в выбранной клетке
     const allCharacters = this.userTeam.concat(this.enemyTeam);
     const allCharactersPositions = allCharacters.map((elem) => {
@@ -101,6 +116,63 @@ export default class GameController {
       allCharacters.forEach((element) => {
         if (element.position === index) this.gamePlay.showCellTooltip(element.character.showInfo(), index);
       });
+    }
+  }
+
+  isAllowed(positionedCharacter, index) {
+    // Ищем соседние клетки, учитывая, что поле квадратное
+    const range = positionedCharacter.character.getRange();
+    const position = this.convertIndex(positionedCharacter.position);
+    const allCharacters = this.userTeam.concat(this.enemyTeam);
+    const target = this.convertIndex(index);
+    // let top, topRight, right, rightBottom, bottom, bottomLeft, left, leftTop = [];
+    console.log(range);
+
+    function isCellEmpty(index) {
+      const cellsWithCharacters = allCharacters.map((elem) => elem.position);
+      return cellsWithCharacters.indexOf(index) === -1 ? true : false;
+    }
+    if(isCellEmpty(index)) {
+      // Клетка пустая. Проверяем, можно ли на нее пойти
+      // Считаем диагонали, чтобы исключить соседние дальние клетки
+      const diagonals = [];
+      const size = this.gamePlay.boardSize;
+      for(let i = 1; i <= range.walk; i++) {
+        let row = position[0];
+        let column = position[1]
+        if(row - i >= 0 && column + i < size) diagonals.push(this.convertIndex([row - i, column + i]));
+        if(row + i < size && column + i < size) diagonals.push(this.convertIndex([row + i, column + i]));
+        if(row + i < size && column - i >= 0) diagonals.push(this.convertIndex([row + i, column - i]));
+        if(row - i >= 0 && column - i >= 0) diagonals.push(this.convertIndex([row - i, column - i]));
+      }
+      console.log(diagonals, index);
+      if((position[0] === target[0] && Math.abs(position[1] - target[1]) <= range.walk) // Горизонталь
+      || (position[1] === target[1] && Math.abs(position[0] - target[0]) <= range.walk) // Вертикаль
+      || diagonals.includes(index)) { // Диагональ
+        return { walk: true, attack: false };
+      }
+    } else if(this.enemyTeam.map((elem) => elem.position).indexOf(index) !== -1) {
+      // На клетке враг
+      if((position[0] === target[0] && Math.abs(position[1] - target[1]) <= range.attack) // Горизонталь
+      || (position[1] === target[1] && Math.abs(position[0] - target[0]) <= range.attack) // Вертикаль
+      || (Math.abs(position[1] - target[1]) <= range.attack && Math.abs(position[0] - target[0]) <= range.attack)) { // Диагональ
+        return { walk: false, attack: true };
+      }
+    } else {
+      return false;
+    }
+
+  }
+
+  convertIndex(index) {
+    if(Array.isArray(index)){
+      const row = index[0];
+      const column = index[1];
+      return row * this.gamePlay.boardSize + column;
+    } else {
+      const row = Math.floor(index/this.gamePlay.boardSize);
+      const column = index % this.gamePlay.boardSize;
+      return [row, column];
     }
   }
 
