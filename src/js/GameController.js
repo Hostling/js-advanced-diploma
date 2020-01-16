@@ -78,6 +78,12 @@ export default class GameController {
     const userCharactersPositions = this.userTeam.map((elem) => {
       return elem.position;
     });
+    const resetSelected = () => {
+      this.gamePlay.deselectCell(index);
+      this.gamePlay.deselectCell(this.selectedCell);
+      this.selectedCell = undefined;
+      this.gamePlay.setCursor('auto');
+    }
     if(this.selectedCell === undefined) {
       if (userCharactersPositions.indexOf(index) === -1) {
         GamePlay.showError('В этой ячейке нет персонажа вашей команды!');
@@ -102,6 +108,9 @@ export default class GameController {
       } else if (allow.walk) {
         this.gamePlay.setCursor('pointer');
         this.gamePlay.selectCell(index, 'green');
+        selectedCharacter.position = index;
+        resetSelected();
+        this.gamePlay.redrawPositions(this.userTeam.concat(this.enemyTeam));
       }
     }
   }
@@ -125,8 +134,6 @@ export default class GameController {
     const position = this.convertIndex(positionedCharacter.position);
     const allCharacters = this.userTeam.concat(this.enemyTeam);
     const target = this.convertIndex(index);
-    // let top, topRight, right, rightBottom, bottom, bottomLeft, left, leftTop = [];
-    console.log(range);
 
     function isCellEmpty(index) {
       const cellsWithCharacters = allCharacters.map((elem) => elem.position);
@@ -145,7 +152,6 @@ export default class GameController {
         if(row + i < size && column - i >= 0) diagonals.push(this.convertIndex([row + i, column - i]));
         if(row - i >= 0 && column - i >= 0) diagonals.push(this.convertIndex([row - i, column - i]));
       }
-      console.log(diagonals, index);
       if((position[0] === target[0] && Math.abs(position[1] - target[1]) <= range.walk) // Горизонталь
       || (position[1] === target[1] && Math.abs(position[0] - target[0]) <= range.walk) // Вертикаль
       || diagonals.includes(index)) { // Диагональ
@@ -161,7 +167,6 @@ export default class GameController {
     } else {
       return false;
     }
-
   }
 
   convertIndex(index) {
