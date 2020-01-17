@@ -18,4 +18,9 @@ export default class Character {
   getRange() {
     return { walk: this.walkRange, attack: this.attackRange };
   }
+
+  takeDamage(damage) {
+    this.health -= damage;
+    return this.health < 0 ? false : true;
+  }
 }

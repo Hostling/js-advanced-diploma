@@ -105,6 +105,14 @@ export default class GameController {
       } else if(allow.attack) {
         this.gamePlay.setCursor('crosshair');
         this.gamePlay.selectCell(index, 'red');
+        const targetCharacter = this.enemyTeam.find((element) => element.position === index);
+        const damage = Math.max(selectedCharacter.character.attack - targetCharacter.character.defence, selectedCharacter.character.attack * 0.1);
+        this.gamePlay.showDamage(index, damage)
+        .then(() => {
+          if (!targetCharacter.character.takeDamage(damage)) this.enemyTeam.splice(this.enemyTeam.indexOf(targetCharacter), 1);
+          resetSelected();
+          this.gamePlay.redrawPositions(this.userTeam.concat(this.enemyTeam));
+        });
       } else if (allow.walk) {
         this.gamePlay.setCursor('pointer');
         this.gamePlay.selectCell(index, 'green');
