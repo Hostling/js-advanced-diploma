@@ -17,6 +17,7 @@ export default class GameController {
     this.userTeam = [];
     this.enemyTeam = [];
     this.selectedCell = undefined;
+    this.turn = 'user';
   }
 
   init() {
@@ -73,7 +74,7 @@ export default class GameController {
   }
 
   onCellClick(index) {
-    // TODO: react to click
+    if(this.turn !== 'user') return false;
     // Получаем массив со списком ячеек с парсонажами игрока
     const userCharactersPositions = this.userTeam.map((elem) => {
       return elem.position;
@@ -112,6 +113,8 @@ export default class GameController {
           if (!targetCharacter.character.takeDamage(damage)) this.enemyTeam.splice(this.enemyTeam.indexOf(targetCharacter), 1);
           resetSelected();
           this.gamePlay.redrawPositions(this.userTeam.concat(this.enemyTeam));
+          this.turn = 'enemy';
+          this.enemyTurn();
         });
       } else if (allow.walk) {
         this.gamePlay.setCursor('pointer');
@@ -119,6 +122,8 @@ export default class GameController {
         selectedCharacter.position = index;
         resetSelected();
         this.gamePlay.redrawPositions(this.userTeam.concat(this.enemyTeam));
+        this.turn = 'enemy';
+        this.enemyTurn();
       }
     }
   }
@@ -186,6 +191,62 @@ export default class GameController {
       const row = Math.floor(index/this.gamePlay.boardSize);
       const column = index % this.gamePlay.boardSize;
       return [row, column];
+    }
+  }
+
+  enemyTurn() {
+    // Выбираем рандомного перса компьютера
+    const character = this.enemyTeam[Math.floor(Math.random() * Math.floor(this.enemyTeam.length))];
+    this.gamePlay.selectCell(character.position);
+    // Проверяем есть ли в его зоне атаки персы игрока
+    const allUsersPositions = this.userTeam.map((elem) => elem.position);
+    const position = this.convertIndex(character.position);
+    const targetForAttack = allUsersPositions.find((elem) => {
+      const target = this.convertIndex(elem);
+      return (position[0] === target[0] && Math.abs(position[1] - target[1]) <= character.character.getRange().attack) // Горизонталь
+      || (position[1] === target[1] && Math.abs(position[0] - target[0]) <= character.character.getRange().attack) // Вертикаль
+      || (Math.abs(position[1] - target[1]) <= character.character.getRange().attack && Math.abs(position[0] - target[0]) <= character.character.getRange().attack) // Диагональ
+    });
+    console.log(targetForAttack);
+    if(targetForAttack !== undefined) {
+      // Если персы есть
+      // Атакуем персов игрока
+      const targetCharacter = this.userTeam.find((element) => element.position === targetForAttack);
+      const damage = Math.max(character.character.attack - targetCharacter.character.defence, character.character.attack * 0.1);
+      this.gamePlay.selectCell(targetForAttack, 'red');
+      this.gamePlay.showDamage(targetForAttack, damage)
+      .then(() => {
+        if (!targetCharacter.character.takeDamage(damage)) this.userTeam.splice(this.userTeam.indexOf(targetCharacter), 1);
+        this.gamePlay.deselectCell(character.position);
+        this.gamePlay.deselectCell(targetForAttack);
+        this.gamePlay.redrawPositions(this.userTeam.concat(this.enemyTeam));
+        this.turn = 'user';
+      });
+    } else {
+      // Если персов нет, то ходим на рандомную клетку в рандомную сторону
+      const allEnemyPositions = this.enemyTeam.map((elem) => elem.position);
+      let allowedPosition = [];
+      const size = this.gamePlay.boardSize;
+      const range = character.character.getRange().walk;
+      let row = position[0];
+      let column = position[1];
+      // Генерируем потенциальные клетки, на которые комп может ходить
+      if(row - range >= 0 && column + range < size) allowedPosition.push(this.convertIndex([row - range, column + range]));
+      if(row + range < size && column + range < size) allowedPosition.push(this.convertIndex([row + range, column + range]));
+      if(row + range < size && column - range >= 0) allowedPosition.push(this.convertIndex([row + range, column - range]));
+      if(row - range >= 0 && column - range >= 0) allowedPosition.push(this.convertIndex([row - range, column - range]));
+      if(column + range < size) allowedPosition.push(this.convertIndex([row, column + range]));
+      if(column - range >= 0) allowedPosition.push(this.convertIndex([row, column - range]));
+      if(row + range < size) allowedPosition.push(this.convertIndex([row + range, column]));
+      if(row - range >= 0) allowedPosition.push(this.convertIndex([row - range, column]));
+      // Фильтруем клетки, где есть другие персы компа
+      allowedPosition = allowedPosition.filter((element) => allEnemyPositions.indexOf(this.convertIndex(element)) === -1);
+      // Пусть Великий Китайский Рандом решит куда персу идти
+      const cellToGo = allowedPosition[Math.floor(Math.random() * Math.floor(allowedPosition.length))];
+      this.gamePlay.deselectCell(character.position);
+      character.position = cellToGo;
+      this.gamePlay.redrawPositions(this.userTeam.concat(this.enemyTeam));
+      this.turn = 'user';
     }
   }
 
