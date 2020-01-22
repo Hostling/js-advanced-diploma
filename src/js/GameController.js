@@ -18,6 +18,8 @@ export default class GameController {
     this.enemyTeam = [];
     this.selectedCell = undefined;
     this.turn = 'user';
+    this.level = 1;
+    this.points = 0;
   }
 
   init() {
@@ -85,7 +87,8 @@ export default class GameController {
       this.selectedCell = undefined;
       this.gamePlay.setCursor('auto');
     }
-    if(this.selectedCell === undefined) {
+
+    const checkNotAvaliable = () => {
       if (userCharactersPositions.indexOf(index) === -1) {
         GamePlay.showError('В этой ячейке нет персонажа вашей команды!');
         return null;
@@ -96,6 +99,35 @@ export default class GameController {
       }
       this.gamePlay.selectCell(index);
       this.selectedCell = index;
+    }
+
+    const attackEnemy = (selectedCharacter) => {
+      this.gamePlay.setCursor('crosshair');
+      this.gamePlay.selectCell(index, 'red');
+      const targetCharacter = this.enemyTeam.find((element) => element.position === index);
+      const damage = Math.max(selectedCharacter.character.attack - targetCharacter.character.defence, selectedCharacter.character.attack * 0.1);
+      this.gamePlay.showDamage(index, damage)
+      .then(() => {
+        if (!targetCharacter.character.takeDamage(damage)) this.enemyTeam.splice(this.enemyTeam.indexOf(targetCharacter), 1);
+        resetSelected();
+        this.gamePlay.redrawPositions(this.userTeam.concat(this.enemyTeam));
+        this.turn = 'enemy';
+        this.enemyTurn();
+      });
+    }
+
+    const goToCell = (selectedCharacter) => {
+      this.gamePlay.setCursor('pointer');
+      this.gamePlay.selectCell(index, 'green');
+      selectedCharacter.position = index;
+      resetSelected();
+      this.gamePlay.redrawPositions(this.userTeam.concat(this.enemyTeam));
+      this.turn = 'enemy';
+      this.enemyTurn();
+    }
+
+    if(this.selectedCell === undefined) {
+      checkNotAvaliable();
     } else {
       const selectedCharacter = this.userTeam.find((element) => element.position === this.selectedCell);
       const allow = this.isAllowed(selectedCharacter, index);
@@ -104,26 +136,9 @@ export default class GameController {
       } else if(!allow) {
         this.gamePlay.setCursor('not-allowed');
       } else if(allow.attack) {
-        this.gamePlay.setCursor('crosshair');
-        this.gamePlay.selectCell(index, 'red');
-        const targetCharacter = this.enemyTeam.find((element) => element.position === index);
-        const damage = Math.max(selectedCharacter.character.attack - targetCharacter.character.defence, selectedCharacter.character.attack * 0.1);
-        this.gamePlay.showDamage(index, damage)
-        .then(() => {
-          if (!targetCharacter.character.takeDamage(damage)) this.enemyTeam.splice(this.enemyTeam.indexOf(targetCharacter), 1);
-          resetSelected();
-          this.gamePlay.redrawPositions(this.userTeam.concat(this.enemyTeam));
-          this.turn = 'enemy';
-          this.enemyTurn();
-        });
+        attackEnemy(selectedCharacter);
       } else if (allow.walk) {
-        this.gamePlay.setCursor('pointer');
-        this.gamePlay.selectCell(index, 'green');
-        selectedCharacter.position = index;
-        resetSelected();
-        this.gamePlay.redrawPositions(this.userTeam.concat(this.enemyTeam));
-        this.turn = 'enemy';
-        this.enemyTurn();
+        goToCell(selectedCharacter);
       }
     }
   }
@@ -253,5 +268,13 @@ export default class GameController {
   onCellLeave(index) {
     // TODO: react to mouse leave
     this.gamePlay.hideCellTooltip(index);
+  }
+
+  checkWin() {
+    // Если все персы игрока погибли или уровень > this.maxlevel
+    // Уровень повышается, если все персы компьютера мертвы
+    if(this.enemyTeam.length === 0) {
+
+    }
   }
 }
