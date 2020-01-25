@@ -7,6 +7,7 @@ import Daemon from './Daemon';
 import { generateTeam } from './generators'
 import PositionedCharacter from './PositionedCharacter';
 import GamePlay from './GamePlay';
+import GameState from './GameState';
 
 export default class GameController {
   constructor(gamePlay, stateService) {
@@ -34,6 +35,8 @@ export default class GameController {
     this.gamePlay.addCellLeaveListener(this.onCellLeave.bind(this));
     this.gamePlay.addCellClickListener(this.onCellClick.bind(this));
     this.gamePlay.addNewGameListener(this.onNewGame.bind(this));
+    this.gamePlay.addLoadGameListener(this.onLoadGame.bind(this));
+    this.gamePlay.addSaveGameListener(this.onSaveGame.bind(this));
   }
 
   drawCharacters() {
@@ -303,6 +306,47 @@ export default class GameController {
     this.points = 0;
     this.locked = false;
     this.drawCharacters();
+  }
+
+  onSaveGame() {
+    const saved = {
+      userTeam: this.userTeam,
+      enemyTeam: this.enemyTeam,
+      selected: this.selectedCell,
+      level: this.level,
+      points: this.points,
+    };
+    this.stateService.save(GameState.from(saved));
+    GamePlay.showMessage('Игра сохранена');
+  }
+
+  onLoadGame() {
+    const load = this.stateService.load();
+    if(load) {
+      this.userTeam = load.userTeam;
+      this.enemyTeam = load.enemyTeam;
+      this.selectedCell = load.selected;
+      this.level = load.level;
+      this.points = load.points;
+    }
+    switch (load.level) {
+      case 1:
+        this.gamePlay.drawUi('prairie');
+        break;
+      case 2:
+        this.gamePlay.drawUi('desert');
+        break;
+      case 3:
+        this.gamePlay.drawUi('arctic');
+        break;
+      case 4:
+        this.gamePlay.drawUi('mountain');
+        break;
+      default:
+        throw new Error('Ошибка прорисовки карты');
+    }
+    this.gamePlay.redrawPositions(this.userTeam.concat(this.enemyTeam));
+    this.turn = 'user';
   }
 
   checkLevelUp() {
