@@ -111,6 +111,7 @@ export default class GameController {
         if (!targetCharacter.character.takeDamage(damage)) this.enemyTeam.splice(this.enemyTeam.indexOf(targetCharacter), 1);
         resetSelected();
         this.gamePlay.redrawPositions(this.userTeam.concat(this.enemyTeam));
+        this.checkLevelUp();
         this.turn = 'enemy';
         this.enemyTurn();
       });
@@ -122,6 +123,7 @@ export default class GameController {
       selectedCharacter.position = index;
       resetSelected();
       this.gamePlay.redrawPositions(this.userTeam.concat(this.enemyTeam));
+      this.checkLevelUp();
       this.turn = 'enemy';
       this.enemyTurn();
     }
@@ -235,7 +237,6 @@ export default class GameController {
       || (position[1] === target[1] && Math.abs(position[0] - target[0]) <= character.character.getRange().attack) // Вертикаль
       || (Math.abs(position[1] - target[1]) <= character.character.getRange().attack && Math.abs(position[0] - target[0]) <= character.character.getRange().attack) // Диагональ
     });
-    console.log(targetForAttack);
     if(targetForAttack !== undefined) {
       // Если персы есть
       // Атакуем персов игрока
@@ -249,6 +250,7 @@ export default class GameController {
         this.gamePlay.deselectCell(targetForAttack);
         this.gamePlay.redrawPositions(this.userTeam.concat(this.enemyTeam));
         this.turn = 'user';
+        this.checkLevelUp();
       });
     } else {
       // Если персов нет, то ходим на рандомную клетку в рандомную сторону
@@ -275,12 +277,62 @@ export default class GameController {
       character.position = cellToGo;
       this.gamePlay.redrawPositions(this.userTeam.concat(this.enemyTeam));
       this.turn = 'user';
+      this.checkLevelUp();
     }
   }
 
   onCellLeave(index) {
     // TODO: react to mouse leave
     this.gamePlay.hideCellTooltip(index);
+  }
+
+  checkLevelUp() {
+    if(this.enemyTeam.length > 0) return false;
+    const userPositions = Array.from(this.getStartPositions(this.gamePlay.boardSize, 'user'));
+    const enemyPositions = Array.from(this.getStartPositions(this.gamePlay.boardSize, 'enemy'));
+
+    const levelUp = (landscape, addUserCharactersCount, addUserCharactersLevel, maxEnemyLevel) => {
+      this.gamePlay.drawUi(landscape);
+      this.userTeam.map((elem) => {
+        elem.character.attack = Math.max(elem.character.attack, elem.character.attack * (1.8 - elem.character.health / 100));
+        elem.character.defence = Math.max(elem.character.defence, elem.character.defence * (1.8 - elem.character.health / 100));
+        elem.character.health += (elem.character.level + 80);
+        if(elem.character.health > 100) elem.character.health = 100;
+        elem.character.level += 1;
+      });
+      for(let i = 0; i < addUserCharactersCount;i++) {
+          this.userTeam.push(new PositionedCharacter(i, generateTeam([Bowman, Swordsman, Magician], addUserCharactersLevel, 1)));
+      }
+      this.enemyTeam = generateTeam([Undead, Vampire, Daemon], Math.floor(Math.random() * Math.floor(maxEnemyLevel)), this.userTeam.length);
+      this.userTeam = this.userTeam.map((elem) => {
+        elem.position = userPositions.shift();
+      });
+      this.enemyTeam = this.enemyTeam.map((elem) => {
+        return new PositionedCharacter(elem.value, enemyPositions.shift())
+      });
+      this.gamePlay.redrawPositions(this.userTeam.concat(this.enemyTeam));
+      this.level += 1;
+    };
+    switch(this.level) {
+      case 1:
+        levelUp('desert', 1, 1, 2);
+        break;
+      case 2:
+        levelUp('arctic', 2, Math.floor(Math.random() * Math.floor(2)), 3);
+        break;
+      case 3:
+        levelUp('mountain', 2, Math.floor(Math.random() * Math.floor(3)), 4);
+        break;
+      case 4:
+        this.win();
+        break;
+      default:
+        throw new Error('Произошла ошибка при переходе на новый уровень');
+    }
+  }
+
+  win() {
+
   }
 
 }
