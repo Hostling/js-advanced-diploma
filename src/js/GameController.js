@@ -20,6 +20,7 @@ export default class GameController {
     this.turn = 'user';
     this.level = 1;
     this.points = 0;
+    this.locked = false;
   }
 
   init() {
@@ -76,7 +77,7 @@ export default class GameController {
   }
 
   onCellClick(index) {
-    if(this.turn !== 'user') return false;
+    if(this.turn !== 'user' || this.locked) return false;
     // Получаем массив со списком ячеек с парсонажами игрока
     const userCharactersPositions = this.userTeam.map((elem) => {
       return elem.position;
@@ -147,6 +148,7 @@ export default class GameController {
 
   onCellEnter(index) {
     // Проверяем есть ли персонаж в выбранной клетке
+    if(this.locked) return false;
     const allCharacters = this.userTeam.concat(this.enemyTeam);
     const allCharactersPositions = allCharacters.map((elem) => {
       return elem.position;
@@ -237,6 +239,13 @@ export default class GameController {
       || (position[1] === target[1] && Math.abs(position[0] - target[0]) <= character.character.getRange().attack) // Вертикаль
       || (Math.abs(position[1] - target[1]) <= character.character.getRange().attack && Math.abs(position[0] - target[0]) <= character.character.getRange().attack) // Диагональ
     });
+    const afterTurn = () => {
+      this.gamePlay.redrawPositions(this.userTeam.concat(this.enemyTeam));
+      this.turn = 'user';
+      this.checkLevelUp();
+      this.checkLose();
+    };
+
     if(targetForAttack !== undefined) {
       // Если персы есть
       // Атакуем персов игрока
@@ -248,9 +257,7 @@ export default class GameController {
         if (!targetCharacter.character.takeDamage(damage)) this.userTeam.splice(this.userTeam.indexOf(targetCharacter), 1);
         this.gamePlay.deselectCell(character.position);
         this.gamePlay.deselectCell(targetForAttack);
-        this.gamePlay.redrawPositions(this.userTeam.concat(this.enemyTeam));
-        this.turn = 'user';
-        this.checkLevelUp();
+        afterTurn();
       });
     } else {
       // Если персов нет, то ходим на рандомную клетку в рандомную сторону
@@ -275,9 +282,7 @@ export default class GameController {
       const cellToGo = allowedPosition[Math.floor(Math.random() * Math.floor(allowedPosition.length))];
       this.gamePlay.deselectCell(character.position);
       character.position = cellToGo;
-      this.gamePlay.redrawPositions(this.userTeam.concat(this.enemyTeam));
-      this.turn = 'user';
-      this.checkLevelUp();
+      afterTurn();
     }
   }
 
@@ -327,15 +332,21 @@ export default class GameController {
         levelUp('mountain', 2, Math.floor(Math.random() * Math.floor(3)), 4);
         break;
       case 4:
-        this.win();
+        this.endGame('Вы выиграли!');
         break;
       default:
         throw new Error('Произошла ошибка при переходе на новый уровень');
     }
   }
 
-  win() {
+  checkLose() {
+    if(this.userTeam.length > 0) return false;
+    this.endGame('Вы проиграли!');
+  }
 
+  endGame(message) {
+    this.locked = true;
+    GamePlay.showMessage(message);
   }
 
 }
