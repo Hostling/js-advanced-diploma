@@ -176,10 +176,10 @@ export default class GameController {
     }
     if(isCellEmpty(index)) {
       // Клетка пустая. Проверяем, можно ли на нее пойти
-      return this.canWalk();
+      return this.canWalk(positionedCharacter, index);
     } else if(this.enemyTeam.map((elem) => elem.position).indexOf(index) !== -1) {
       // На клетке враг
-      return this.canAttack();
+      return this.canAttack(positionedCharacter, index);
     }
   }
 
