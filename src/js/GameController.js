@@ -158,10 +158,7 @@ export default class GameController {
 
   isAllowed(positionedCharacter, index) {
     // Ищем соседние клетки, учитывая, что поле квадратное
-    const range = positionedCharacter.character.getRange();
-    const position = this.convertIndex(positionedCharacter.position);
     const allCharacters = this.userTeam.concat(this.enemyTeam);
-    const target = this.convertIndex(index);
 
     function isCellEmpty(index) {
       const cellsWithCharacters = allCharacters.map((elem) => elem.position);
@@ -169,31 +166,47 @@ export default class GameController {
     }
     if(isCellEmpty(index)) {
       // Клетка пустая. Проверяем, можно ли на нее пойти
-      // Считаем диагонали, чтобы исключить соседние дальние клетки
-      const diagonals = [];
-      const size = this.gamePlay.boardSize;
-      for(let i = 1; i <= range.walk; i++) {
-        let row = position[0];
-        let column = position[1]
-        if(row - i >= 0 && column + i < size) diagonals.push(this.convertIndex([row - i, column + i]));
-        if(row + i < size && column + i < size) diagonals.push(this.convertIndex([row + i, column + i]));
-        if(row + i < size && column - i >= 0) diagonals.push(this.convertIndex([row + i, column - i]));
-        if(row - i >= 0 && column - i >= 0) diagonals.push(this.convertIndex([row - i, column - i]));
-      }
-      if((position[0] === target[0] && Math.abs(position[1] - target[1]) <= range.walk) // Горизонталь
-      || (position[1] === target[1] && Math.abs(position[0] - target[0]) <= range.walk) // Вертикаль
-      || diagonals.includes(index)) { // Диагональ
-        return { walk: true, attack: false };
-      }
+      return this.canWalk();
     } else if(this.enemyTeam.map((elem) => elem.position).indexOf(index) !== -1) {
       // На клетке враг
-      if((position[0] === target[0] && Math.abs(position[1] - target[1]) <= range.attack) // Горизонталь
-      || (position[1] === target[1] && Math.abs(position[0] - target[0]) <= range.attack) // Вертикаль
-      || (Math.abs(position[1] - target[1]) <= range.attack && Math.abs(position[0] - target[0]) <= range.attack)) { // Диагональ
-        return { walk: false, attack: true };
-      }
+      return this.canAttack();
+    }
+  }
+
+  canWalk(positionedCharacter, index) {
+    const range = positionedCharacter.character.getRange();
+    const position = this.convertIndex(positionedCharacter.position);
+    const target = this.convertIndex(index);
+    const size = this.gamePlay.boardSize;
+    const diagonals = [];
+
+    for(let i = 1; i <= range.walk; i++) {
+      let row = position[0];
+      let column = position[1]
+      if(row - i >= 0 && column + i < size) diagonals.push(this.convertIndex([row - i, column + i]));
+      if(row + i < size && column + i < size) diagonals.push(this.convertIndex([row + i, column + i]));
+      if(row + i < size && column - i >= 0) diagonals.push(this.convertIndex([row + i, column - i]));
+      if(row - i >= 0 && column - i >= 0) diagonals.push(this.convertIndex([row - i, column - i]));
+    }
+    if((position[0] === target[0] && Math.abs(position[1] - target[1]) <= range.walk) // Горизонталь
+    || (position[1] === target[1] && Math.abs(position[0] - target[0]) <= range.walk) // Вертикаль
+    || diagonals.includes(index)) { // Диагональ
+      return { walk: true };
     } else {
       return false;
+    }
+  }
+
+  canAttack(positionedCharacter, index) {
+    const range = positionedCharacter.character.getRange();
+    const position = this.convertIndex(positionedCharacter.position);
+    const target = this.convertIndex(index);
+    if((position[0] === target[0] && Math.abs(position[1] - target[1]) <= range.attack) // Горизонталь
+    || (position[1] === target[1] && Math.abs(position[0] - target[0]) <= range.attack) // Вертикаль
+    || (Math.abs(position[1] - target[1]) <= range.attack && Math.abs(position[0] - target[0]) <= range.attack)) { // Диагональ
+      return { attack: true };
+    } else {
+    return false;
     }
   }
 
@@ -270,11 +283,4 @@ export default class GameController {
     this.gamePlay.hideCellTooltip(index);
   }
 
-  checkWin() {
-    // Если все персы игрока погибли или уровень > this.maxlevel
-    // Уровень повышается, если все персы компьютера мертвы
-    if(this.enemyTeam.length === 0) {
-
-    }
-  }
 }
