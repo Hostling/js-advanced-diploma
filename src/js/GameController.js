@@ -293,6 +293,9 @@ export default class GameController {
 
     const levelUp = (landscape, addUserCharactersCount, addUserCharactersLevel, maxEnemyLevel) => {
       this.gamePlay.drawUi(landscape);
+      this.userTeam.forEach((elem) => {
+        this.points += elem.character.health;
+      });
       this.userTeam.map((elem) => {
         elem.character.attack = Math.max(elem.character.attack, elem.character.attack * (1.8 - elem.character.health / 100));
         elem.character.defence = Math.max(elem.character.defence, elem.character.defence * (1.8 - elem.character.health / 100));
