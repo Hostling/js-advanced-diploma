@@ -5,7 +5,7 @@ export default class Vampire extends Character {
     super(level, 'vampire');
     this.attack = 40;
     this.defence = 10;
-    this.walkRange = 2;
-    this.attackRange = 2;
+    this.walkRange = 4;
+    this.attackRange = 1;
   }
 }
