@@ -21,6 +21,6 @@ export default class Character {
 
   takeDamage(damage) {
     this.health -= damage;
-    return this.health < 0 ? false : true;
+    return this.health <= 0 ? false : true;
   }
 }

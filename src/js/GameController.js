@@ -268,6 +268,7 @@ export default class GameController {
     } else {
       // Если персов нет, то ходим на рандомную клетку в рандомную сторону
       const allEnemyPositions = this.enemyTeam.map((elem) => elem.position);
+      const allUserPositions = this.enemyTeam.map((elem) => elem.position);
       let allowedPosition = [];
       const size = this.gamePlay.boardSize;
       const range = character.character.getRange().walk;
@@ -284,6 +285,8 @@ export default class GameController {
       if(row - range >= 0) allowedPosition.push(this.convertIndex([row - range, column]));
       // Фильтруем клетки, где есть другие персы компа
       allowedPosition = allowedPosition.filter((element) => allEnemyPositions.indexOf(this.convertIndex(element)) === -1);
+      // Фильтруем клетки, где есть игроки
+      allowedPosition = allowedPosition.filter((element) => allUserPositions.indexOf(this.convertIndex(element)) === -1);
       // Пусть Великий Китайский Рандом решит куда персу идти
       const cellToGo = allowedPosition[Math.floor(Math.random() * Math.floor(allowedPosition.length))];
       this.gamePlay.deselectCell(character.position);
@@ -351,15 +354,11 @@ export default class GameController {
 
   checkLevelUp() {
     if(this.enemyTeam.length > 0) return false;
-    const userPositions = Array.from(this.getStartPositions(this.gamePlay.boardSize, 'user'));
-    const enemyPositions = Array.from(this.getStartPositions(this.gamePlay.boardSize, 'enemy'));
 
     const levelUp = (landscape, addUserCharactersCount, addUserCharactersLevel, maxEnemyLevel) => {
       this.gamePlay.drawUi(landscape);
       this.userTeam.forEach((elem) => {
         this.points += elem.character.health;
-      });
-      this.userTeam.map((elem) => {
         elem.character.attack = Math.max(elem.character.attack, elem.character.attack * (1.8 - elem.character.health / 100));
         elem.character.defence = Math.max(elem.character.defence, elem.character.defence * (1.8 - elem.character.health / 100));
         elem.character.health += (elem.character.level + 80);
@@ -367,16 +366,24 @@ export default class GameController {
         elem.character.level += 1;
       });
       for(let i = 0; i < addUserCharactersCount;i++) {
-          this.userTeam.push(new PositionedCharacter(i, generateTeam([Bowman, Swordsman, Magician], addUserCharactersLevel, 1)));
+        const newChar = generateTeam([Bowman, Swordsman, Magician], addUserCharactersLevel, 1);
+        const newPosChar = new PositionedCharacter(newChar[0].value, i);
+        this.userTeam.push(newPosChar);
       }
-      this.enemyTeam = generateTeam([Undead, Vampire, Daemon], Math.floor(Math.random() * Math.floor(maxEnemyLevel)), this.userTeam.length);
-      this.userTeam = this.userTeam.map((elem) => {
+      const userTeamLength = this.userTeam.length;
+      this.charactersCount = userTeamLength;
+      const userPositions = Array.from(this.getStartPositions(this.gamePlay.boardSize, 'user'));
+      const enemyPositions = Array.from(this.getStartPositions(this.gamePlay.boardSize, 'enemy'));
+      this.userTeam = this.userTeam.forEach((elem) => {
         elem.position = userPositions.shift();
       });
-      this.enemyTeam = this.enemyTeam.map((elem) => {
-        return new PositionedCharacter(elem.value, enemyPositions.shift())
+      const tempEnemyTeam = generateTeam([Undead, Vampire, Daemon], Math.floor(Math.random() * Math.floor(maxEnemyLevel)), userTeamLength);
+      tempEnemyTeam.forEach((elem) => {
+        console.log(elem);
+        const newPosChar = new PositionedCharacter(elem.value, enemyPositions.shift());
+        this.enemyTeam.push(newPosChar);
+        this.gamePlay.redrawPositions(this.userTeam.concat(this.enemyTeam));
       });
-      this.gamePlay.redrawPositions(this.userTeam.concat(this.enemyTeam));
       this.level += 1;
     };
     switch(this.level) {
