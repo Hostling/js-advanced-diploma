@@ -382,8 +382,8 @@ export default class GameController {
         console.log(elem);
         const newPosChar = new PositionedCharacter(elem.value, enemyPositions.shift());
         this.enemyTeam.push(newPosChar);
-        this.gamePlay.redrawPositions(this.userTeam.concat(this.enemyTeam));
       });
+      this.gamePlay.redrawPositions(this.userTeam.concat(this.enemyTeam));
       this.level += 1;
     };
     switch(this.level) {
