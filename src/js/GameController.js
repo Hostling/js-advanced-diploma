@@ -366,7 +366,7 @@ export default class GameController {
         elem.character.level += 1;
       });
       for(let i = 0; i < addUserCharactersCount;i++) {
-        const newChar = generateTeam([Bowman, Swordsman, Magician], addUserCharactersLevel, 1);
+        const newChar = generateTeam([Swordsman, Bowman, Magician], addUserCharactersLevel, 1);
         const newPosChar = new PositionedCharacter(newChar[0].value, i);
         this.userTeam.push(newPosChar);
       }
@@ -374,10 +374,10 @@ export default class GameController {
       this.charactersCount = userTeamLength;
       const userPositions = Array.from(this.getStartPositions(this.gamePlay.boardSize, 'user'));
       const enemyPositions = Array.from(this.getStartPositions(this.gamePlay.boardSize, 'enemy'));
-      this.userTeam = this.userTeam.forEach((elem) => {
+      this.userTeam.forEach((elem) => {
         elem.position = userPositions.shift();
       });
-      const tempEnemyTeam = generateTeam([Undead, Vampire, Daemon], Math.floor(Math.random() * Math.floor(maxEnemyLevel)), userTeamLength);
+      const tempEnemyTeam = generateTeam([Undead, Vampire, Daemon, Undead, Vampire, Daemon, Undead, Vampire, Daemon, Undead, Vampire, Daemon], Math.floor(Math.random() * Math.floor(maxEnemyLevel)), userTeamLength);
       tempEnemyTeam.forEach((elem) => {
         console.log(elem);
         const newPosChar = new PositionedCharacter(elem.value, enemyPositions.shift());
